@@ -3,11 +3,10 @@ from django.urls import include, path
 
 urlpatterns = [
     # Admin route
-    path('admin/', admin.site.urls),
-
+    path("admin/", admin.site.urls),
     # Include the URLs from person app.
-    path('', include('apps.person.urls')),
-
+    path("", include("apps.person.urls")),
     # Include the URLs from product app.
-    path('products/', include('apps.product.urls')),
+    path("products/", include("apps.product.urls")),
+    path("users/", include("apps.users.urls")),
 ]
