@@ -14,6 +14,7 @@ Views:
 """
 
 from django.contrib.auth import get_user_model
+from django.contrib.auth.mixins import LoginRequiredMixin
 from django.urls import reverse_lazy
 from django.views.generic import (
     CreateView,
@@ -26,7 +27,7 @@ from django.views.generic import (
 from apps.users.forms import CustomUserChangeForm, CustomUserCreationForm
 
 
-class UserListView(ListView):
+class UserListView(LoginRequiredMixin, ListView):
     """Display a list of users.
 
     Renders the `users/user_list.html` template and exposes the
@@ -38,7 +39,7 @@ class UserListView(ListView):
     context_object_name = "users"
 
 
-class UserDetailView(DetailView):
+class UserDetailView(LoginRequiredMixin, DetailView):
     """Display detail for a single user.
 
     Uses `users/user_detail.html` and puts the object in the context
@@ -50,7 +51,7 @@ class UserDetailView(DetailView):
     context_object_name = "user"
 
 
-class UserCreateView(CreateView):
+class UserCreateView(LoginRequiredMixin, CreateView):
     """Create a new user instance using `CustomUserCreationForm`."""
 
     model = get_user_model()
@@ -59,7 +60,7 @@ class UserCreateView(CreateView):
     success_url = reverse_lazy("users:user_list")
 
 
-class UserUpdateView(UpdateView):
+class UserUpdateView(LoginRequiredMixin, UpdateView):
     """Update an existing user using `CustomUserChangeForm`."""
 
     model = get_user_model()
@@ -68,9 +69,10 @@ class UserUpdateView(UpdateView):
     success_url = reverse_lazy("users:user_list")
 
 
-class UserDeleteView(DeleteView):
+class UserDeleteView(LoginRequiredMixin, DeleteView):
     """Delete a user and redirect to the user list."""
 
     model = get_user_model()
     template_name = "users/user_confirm_delete.html"
     success_url = reverse_lazy("users:user_list")
+
