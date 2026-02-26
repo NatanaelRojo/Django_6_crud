@@ -1,4 +1,4 @@
-from django.contrib.auth.models import User
+from django.contrib.auth import get_user_model
 from django.urls import reverse_lazy
 from django.views.generic import (
     CreateView,
@@ -8,34 +8,36 @@ from django.views.generic import (
     UpdateView,
 )
 
+from apps.users.forms import CustomUserChangeForm, CustomUserCreationForm
+
 
 class UserListView(ListView):
-    model = User
+    model = get_user_model()
     template_name = "users/user_list.html"
     context_object_name = "users"
 
 
 class UserDetailView(DetailView):
-    model = User
+    model = get_user_model()
     template_name = "users/user_detail.html"
     context_object_name = "user"
 
 
 class UserCreateView(CreateView):
-    model = User
+    model = get_user_model()
     template_name = "users/user_form.html"
-    fields = ["username", "email", "first_name", "last_name"]
+    form_class = CustomUserCreationForm
     success_url = reverse_lazy("users:user_list")
 
 
 class UserUpdateView(UpdateView):
-    model = User
+    model = get_user_model()
     template_name = "users/user_form.html"
-    fields = ["username", "email", "first_name", "last_name"]
+    form_class = CustomUserChangeForm
     success_url = reverse_lazy("users:user_list")
 
 
 class UserDeleteView(DeleteView):
-    model = User
+    model = get_user_model()
     template_name = "users/user_confirm_delete.html"
     success_url = reverse_lazy("users:user_list")
