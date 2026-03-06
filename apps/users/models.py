@@ -1,30 +1,28 @@
-"""Custom user model for the `users` app.
-
-This module defines a `User` model that extends Django's
-`AbstractUser` to include an optional `role` field. The model keeps
-the default authentication behavior while allowing a simple string
-role to be stored for each user (e.g. "admin", "manager").
-"""
-
 from django.contrib.auth.models import AbstractUser
 from django.db import models
 
 
 class User(AbstractUser):
-    """Application-specific user model.
+    # id = models.BigAutoField(primary_key=True)
+    name = models.CharField(max_length=255, default="")
+    # email = models.CharField(unique=True, max_length=255)
+    email_verified_at = models.DateTimeField(blank=True, null=True)
+    # password = models.CharField(max_length=255)
+    role = models.CharField(
+        max_length=255,
+        blank=True,
+        null=True,
+        db_comment="Tipo de role:\n                    ADM = Administrador,\n                    SUP = Supervisor,\n                    OPD = Operador de donantes,\n                    OPS = Operador de solicitudes,\n                    PIN = Personal de inmunología,\n                    CHO = Coordinador hospitalario\n                    USR = Usuario,",
+    )
+    remember_token = models.CharField(max_length=100, blank=True, null=True)
+    created_at = models.DateTimeField(blank=True, null=True)
+    updated_at = models.DateTimeField(blank=True, null=True)
+    deleted_at = models.DateTimeField(
+        blank=True,
+        null=True,
+        db_comment="Fecha y hora en la que el registro fue eliminado",
+    )
 
-    Inherits all fields and behavior from Django's `AbstractUser` and
-    adds one optional `role` field to capture a user's role within
-    the application.
-    """
-
-    role = models.CharField(max_length=3, blank=True, null=True)
-
-    def __str__(self) -> str:
-        """Return the username as the string representation.
-
-        This keeps compatibility with Django expectations for user
-        display and logging.
-        """
-
-        return self.username
+    class Meta:
+        # managed = False
+        db_table = "users"
