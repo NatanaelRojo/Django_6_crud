@@ -1,80 +1,98 @@
 import csv
+from pathlib import Path
+from typing import Any, Dict
+
+# Define paths using pathlib for OS-agnostic compatibility
+SOURCE_FILE = Path("./users.csv")
+DESTINATION_FILE = Path("./users_transformado.csv")
+
+FIELDNAMES = [
+    "id",
+    "password",
+    "last_login",
+    "is_superuser",
+    "username",
+    "first_name",
+    "last_name",
+    "email",
+    "is_staff",
+    "is_active",
+    "date_joined",
+    "name",
+    "email_verified_at",
+    "role",
+    "remember_token",
+    "created_at",
+    "updated_at",
+    "deleted_at",
+]
 
 
-def transform_users_csv(input_filepath: str, output_filepath: str) -> None:
+def format_datetime_to_utc(date_str: str) -> str:
     """
-    Reads the original users CSV, applies transformations, and outputs
-    a new CSV that strictly matches the PostgreSQL table column order.
+    Appends the UTC offset to a naive datetime string.
+    Returns an empty string if the input is empty or None.
     """
-    # This list now matches the exact order from your '\d users' output
-    db_columns = [
-        "id",
-        "password",
-        "last_login",
-        "is_superuser",
-        "username",
-        "first_name",
-        "last_name",
-        "email",
-        "is_staff",
-        "is_active",
-        "date_joined",
-        "role",
-        "created_at",
-        "deleted_at",
-        "email_verified_at",
-        "name",
-        "remember_token",
-        "updated_at",
-    ]
+    if not date_str:
+        return ""
 
-    with open(input_filepath, mode="r", encoding="utf-8") as infile:
+    # Defensive check: if it already has an offset, return it as is
+    if "+" in date_str or "Z" in date_str:
+        return date_str
+
+    return f"{date_str}+00:00"
+
+
+def transform_user_row(row: Dict[str, Any]) -> Dict[str, Any]:
+    """
+    Applies business rules to transform a single Laravel user row
+    into a Django-compatible user row.
+    """
+    password_original = row.get("password", "")
+    password_modified = f"bcrypt${password_original}" if password_original else ""
+
+    # Process dates once to use in multiple places
+    created_at_utc = format_datetime_to_utc(row.get("created_at", ""))
+
+    return {
+        "id": row.get("id"),
+        "password": password_modified,
+        "last_login": None,
+        "is_superuser": "f",
+        "username": row.get("email"),
+        "first_name": row.get("name", "").split(" ")[0] if row.get("name") else "",
+        "last_name": " ",
+        "email": row.get("email"),
+        "is_staff": "f",
+        "is_active": "t",
+        "date_joined": created_at_utc,
+        "name": row.get("name"),
+        "email_verified_at": format_datetime_to_utc(row.get("email_verified_at", "")),
+        "role": row.get("role"),
+        "remember_token": row.get("remember_token"),
+        "created_at": created_at_utc,
+        "updated_at": format_datetime_to_utc(row.get("updated_at", "")),
+        "deleted_at": format_datetime_to_utc(row.get("deleted_at", "")),
+    }
+
+
+def main() -> None:
+    """Main execution function to handle file I/O."""
+    with SOURCE_FILE.open(mode="r", encoding="utf-8") as infile:
         reader = csv.DictReader(infile)
 
-        with open(output_filepath, mode="w", encoding="utf-8", newline="") as outfile:
-            writer = csv.DictWriter(outfile, fieldnames=db_columns)
+        with DESTINATION_FILE.open(mode="w", encoding="utf-8", newline="") as outfile:
+            writer = csv.DictWriter(outfile, fieldnames=FIELDNAMES)
             writer.writeheader()
 
             for row in reader:
-                # 1. Transform password
-                password_original = row.get("password", "")
-                password_modificada = (
-                    f"bcrypt${password_original}" if password_original else ""
-                )
+                transformed_row = transform_user_row(row)
+                writer.writerow(transformed_row)
 
-                # 2. Safely extract names
-                full_name = row.get("name", "").strip()
-                first_name = full_name.split(" ")[0] if full_name else ""
-
-                # 3. Map data exactly to the db_columns order
-                nueva_fila = {
-                    "id": row.get("id"),
-                    "password": password_modificada,
-                    "last_login": None,
-                    "is_superuser": "f",
-                    "username": row.get("email"),
-                    "first_name": first_name,
-                    "last_name": " ",
-                    "email": row.get("email"),
-                    "is_staff": "f",
-                    "is_active": "t",
-                    "date_joined": row.get("created_at"),
-                    "role": row.get("role"),
-                    "created_at": row.get("created_at"),
-                    "deleted_at": row.get("deleted_at"),
-                    "email_verified_at": row.get("email_verified_at"),
-                    "name": full_name,
-                    "remember_token": row.get("remember_token"),
-                    "updated_at": row.get("updated_at"),
-                }
-                writer.writerow(nueva_fila)
+    print(
+        f"¡Éxito! Se ha generado '{DESTINATION_FILE}' con las contraseñas y fechas actualizadas."
+    )
 
 
 if __name__ == "__main__":
-    archivo_origen = "./users.csv"
-    archivo_destino = "./users_transformado.csv"
-
-    transform_users_csv(archivo_origen, archivo_destino)
-    print(
-        f"Success! '{archivo_destino}' generated with the exact database schema order."
-    )
+    main()
